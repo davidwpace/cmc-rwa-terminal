@@ -237,9 +237,7 @@ export default function RWATerminalPage() {
                   <span className="block text-[10px] text-slate-400">
                     HTTP STATUS
                   </span>
-                  <span className="font-bold text-white">
-                    {proofMeta?.status ?? 0} OK
-                  </span>
+                  <span className="font-bold text-white">{proofMeta?.status ?? 0}</span>
                 </div>
                 <div className="rounded border border-slate-800 bg-slate-950 p-3">
                   <span className="block text-[10px] text-slate-400">

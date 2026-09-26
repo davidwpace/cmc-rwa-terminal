@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const CMC_BASE_URL = 'https://pro-api.coinmarketcap.com';
+const ALLOWED_ENDPOINTS = new Set(['/v1/cryptocurrency/quotes/latest']);
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -13,22 +14,32 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  if (!endpoint.startsWith('/v1/') || endpoint.includes('..')) {
+  let parsedEndpoint: URL;
+
+  try {
+    parsedEndpoint = new URL(endpoint, CMC_BASE_URL);
+  } catch {
+    return NextResponse.json({ error: 'Invalid endpoint' }, { status: 400 });
+  }
+
+  if (
+    parsedEndpoint.origin !== CMC_BASE_URL ||
+    !ALLOWED_ENDPOINTS.has(parsedEndpoint.pathname)
+  ) {
     return NextResponse.json({ error: 'Invalid endpoint' }, { status: 400 });
   }
 
   const apiKey = process.env.CMC_PRO_API_KEY;
 
-  const forwardParams = new URLSearchParams();
+  const mergedParams = new URLSearchParams(parsedEndpoint.searchParams);
   searchParams.forEach((value, key) => {
     if (key !== 'endpoint') {
-      forwardParams.append(key, value);
+      mergedParams.append(key, value);
     }
   });
 
-  const targetUrl = `${CMC_BASE_URL}${endpoint}${
-    forwardParams.toString() ? `?${forwardParams.toString()}` : ''
-  }`;
+  const targetUrl = new URL(parsedEndpoint.pathname, CMC_BASE_URL);
+  targetUrl.search = mergedParams.toString();
   const startTime = Date.now();
 
   if (!apiKey) {

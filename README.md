@@ -37,8 +37,6 @@ npm run dev
 
 - `/v1/cryptocurrency/quotes/latest` - Multi-symbol batch pricing quotes for
   on-chain RWA tokens (`PAXG`, `XAUT`, `USDY`, `BUIDL`, `bAAPL`).
-- `/v1/real-world-assets/issuers` - Token issuer directory and reserve
-  verification backing.
 
 ### 3. Architecture & API Security
 
