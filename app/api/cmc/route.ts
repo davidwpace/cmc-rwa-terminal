@@ -179,7 +179,7 @@ export async function GET(req: NextRequest) {
         'X-CMC_PRO_API_KEY': apiKey,
         Accept: 'application/json',
       },
-      next: { revalidate: 60 },
+      cache: 'no-store',
     });
 
     const latencyMs = Date.now() - startTime;

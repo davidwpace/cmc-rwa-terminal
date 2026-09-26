@@ -145,7 +145,9 @@ export default function RWATerminalPage() {
         return;
       }
 
-      console.error('Fetch error:', error);
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Fetch error:', error);
+      }
       setProofMeta(null);
       setRawPayload(null);
 
@@ -281,8 +283,17 @@ export default function RWATerminalPage() {
         </div>
       </header>
 
-      <section className="my-8 flex flex-wrap gap-2 rounded border border-slate-800 bg-slate-900/60 p-2">
+      <section
+        role="tablist"
+        aria-label="Terminal views"
+        className="my-8 flex flex-wrap gap-2 rounded border border-slate-800 bg-slate-900/60 p-2"
+      >
         <button
+          id="scanner-tab"
+          role="tab"
+          aria-selected={activeTab === 'scanner'}
+          aria-controls="scanner-panel"
+          tabIndex={activeTab === 'scanner' ? 0 : -1}
           onClick={() => setActiveTab('scanner')}
           className={`rounded px-4 py-2 text-sm font-semibold transition ${
             activeTab === 'scanner'
@@ -293,6 +304,11 @@ export default function RWATerminalPage() {
           Arbitrage Scanner
         </button>
         <button
+          id="issuers-tab"
+          role="tab"
+          aria-selected={activeTab === 'issuers'}
+          aria-controls="issuers-panel"
+          tabIndex={activeTab === 'issuers' ? 0 : -1}
           onClick={() => setActiveTab('issuers')}
           className={`rounded px-4 py-2 text-sm font-semibold transition ${
             activeTab === 'issuers'
@@ -360,7 +376,12 @@ export default function RWATerminalPage() {
       </section>
 
       {activeTab === 'scanner' ? (
-        <section className="overflow-hidden rounded border border-slate-800 bg-slate-900">
+        <section
+          id="scanner-panel"
+          role="tabpanel"
+          aria-labelledby="scanner-tab"
+          className="overflow-hidden rounded border border-slate-800 bg-slate-900"
+        >
           <div className="flex items-center justify-between border-b border-slate-800 p-4">
             <h2 className="text-sm font-semibold uppercase text-slate-300">
               Live Arbitrage Spread Scanner
@@ -449,7 +470,12 @@ export default function RWATerminalPage() {
           </div>
         </section>
       ) : (
-        <section className="overflow-hidden rounded border border-slate-800 bg-slate-900">
+        <section
+          id="issuers-panel"
+          role="tabpanel"
+          aria-labelledby="issuers-tab"
+          className="overflow-hidden rounded border border-slate-800 bg-slate-900"
+        >
           <div className="flex items-center justify-between border-b border-slate-800 p-4">
             <h2 className="text-sm font-semibold uppercase text-slate-300">
               Issuer Intelligence Matrix
@@ -509,7 +535,13 @@ export default function RWATerminalPage() {
                         </div>
                       </td>
                       <td className="p-3">
-                        <div className="inline-flex items-center gap-2 rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-xs text-emerald-300">
+                        <div
+                          className={`inline-flex items-center gap-2 rounded border px-2 py-1 text-xs ${
+                            issuer.audited
+                              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                              : 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+                          }`}
+                        >
                           <ShieldCheck className="h-4 w-4" />
                           {issuer.backingStatus}
                         </div>
