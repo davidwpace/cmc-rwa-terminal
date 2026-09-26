@@ -180,6 +180,7 @@ export async function GET(req: NextRequest) {
         Accept: 'application/json',
       },
       cache: 'no-store',
+      signal: req.signal,
     });
 
     const latencyMs = Date.now() - startTime;

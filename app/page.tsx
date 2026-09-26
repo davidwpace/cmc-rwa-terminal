@@ -84,6 +84,11 @@ export default function RWATerminalPage() {
     return `${Math.round((auditedCount / issuers.length) * 100)}% Audited`;
   }, [issuers]);
 
+  const abortAllRequests = React.useCallback(() => {
+    marketAbortRef.current?.abort();
+    issuerAbortRef.current?.abort();
+  }, []);
+
   async function fetchTerminalData(tab: TerminalTab) {
     const controller = new AbortController();
     const isScannerTab = tab === 'scanner';
@@ -205,14 +210,9 @@ export default function RWATerminalPage() {
 
   useEffect(() => {
     void fetchTerminalData('scanner');
-    const marketAbortController = marketAbortRef.current;
-    const issuerAbortController = issuerAbortRef.current;
 
-    return () => {
-      marketAbortController?.abort();
-      issuerAbortController?.abort();
-    };
-  }, []);
+    return abortAllRequests;
+  }, [abortAllRequests]);
 
   useEffect(() => {
     if (activeTab === 'scanner') {
@@ -308,10 +308,7 @@ export default function RWATerminalPage() {
 
   return (
     <>
-      <main
-        aria-hidden={drawerOpen}
-        className="min-h-screen bg-slate-950 p-6 font-mono text-slate-100 md:p-12"
-      >
+      <main className="min-h-screen bg-slate-950 p-6 font-mono text-slate-100 md:p-12">
       <header className="flex flex-col items-start justify-between gap-4 border-b border-slate-800 pb-8 md:flex-row md:items-center">
         <div>
           <div className="flex items-center gap-2">
