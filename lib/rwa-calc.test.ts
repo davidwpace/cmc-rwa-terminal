@@ -69,4 +69,16 @@ describe('calculateArbitrageSpreads', () => {
     expect(paxg?.benchmarkPrice).toBe(TRADFI_BENCHMARKS.XAU.price);
     expect(baapl).toBeUndefined();
   });
+
+  it('omits assets with non-finite upstream quote prices', () => {
+    const spreads = calculateArbitrageSpreads({
+      PAXG: { quote: { USD: { price: Number.NaN } } },
+      XAUT: { quote: { USD: { price: Number.POSITIVE_INFINITY } } },
+      USDY: { quote: { USD: { price: 1.004 } } },
+    });
+
+    expect(spreads).toHaveLength(1);
+    expect(spreads[0]?.tokenSymbol).toBe('USDY');
+    expect(spreads[0]?.tokenPrice).toBe(1.004);
+  });
 });
