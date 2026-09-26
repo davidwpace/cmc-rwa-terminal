@@ -29,7 +29,7 @@ const compactCurrencyFormatter = new Intl.NumberFormat(undefined, {
 
 const QUOTES_ENDPOINT =
   '/v1/cryptocurrency/quotes/latest?symbol=PAXG,XAUT,USDY,BUIDL,bAAPL';
-const ISSUERS_ENDPOINT = '/v1/real-world-assets/issuers';
+const ISSUERS_ENDPOINT = '/v5/real-world-assets/issuers/list';
 
 type TerminalTab = 'scanner' | 'issuers';
 

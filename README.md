@@ -43,7 +43,7 @@ npm test
 
 - `/v1/cryptocurrency/quotes/latest` - Multi-symbol batch pricing quotes for
   on-chain RWA tokens (`PAXG`, `XAUT`, `USDY`, `BUIDL`, `bAAPL`).
-- `/v1/real-world-assets/issuers` - Issuer reserve and roster intelligence used
+- `/v5/real-world-assets/issuers/list` - Issuer reserve and roster intelligence used
   by the Issuer Intelligence tab.
 
 ### 3. Architecture & API Security
