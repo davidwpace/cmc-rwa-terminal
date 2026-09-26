@@ -53,8 +53,9 @@ npm test
 - **Selective Endpoint Allowlist:** The proxy only permits the implemented quote
   and issuer intelligence routes so the terminal stays hackathon-focused and
   avoids open proxy behavior.
-- **Rate-Limit & Credit Defense:** Configured with `next: { revalidate: 60 }` to
-  avoid burning through Startup-tier call credits.
+- **Fresh Refresh Semantics:** The proxy uses `cache: 'no-store'` so a manual
+  refresh in the terminal always requests fresh upstream data for judge-facing
+  verification.
 - **Visible Proof of Call:** Built-in "Judge API Audit" drawer displaying the
   active API endpoint, upstream latency, HTTP response status, and raw JSON
   response payload.
