@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { RWAIssuerItem } from '@/lib/types';
 
 const CMC_BASE_URL = 'https://pro-api.coinmarketcap.com';
+const CMC_BASE_ORIGIN = new URL(CMC_BASE_URL).origin;
 const QUOTES_ENDPOINT = '/v1/cryptocurrency/quotes/latest';
 const ISSUERS_ENDPOINTS = new Set([
   '/v1/real-world-assets/issuers',
@@ -121,7 +122,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (
-    parsedEndpoint.origin !== CMC_BASE_URL ||
+    parsedEndpoint.origin !== CMC_BASE_ORIGIN ||
     !ALLOWED_ENDPOINTS.has(parsedEndpoint.pathname)
   ) {
     return NextResponse.json({ error: 'Invalid endpoint' }, { status: 400 });

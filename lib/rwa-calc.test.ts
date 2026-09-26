@@ -42,6 +42,21 @@ describe('calculateArbitrageSpreads', () => {
     expect(usdy?.status).toBe('PAR');
   });
 
+  it('crosses into premium and discount immediately outside the parity boundary', () => {
+    const justAboveParity = TRADFI_BENCHMARKS.XAU.price * 1.0005001;
+    const justBelowParity = TRADFI_BENCHMARKS.UST_NAV.price * 0.9994999;
+    const spreads = calculateArbitrageSpreads({
+      PAXG: { quote: { USD: { price: justAboveParity } } },
+      USDY: { quote: { USD: { price: justBelowParity } } },
+    });
+
+    const paxg = spreads.find((spread) => spread.tokenSymbol === 'PAXG');
+    const usdy = spreads.find((spread) => spread.tokenSymbol === 'USDY');
+
+    expect(paxg?.status).toBe('PREMIUM');
+    expect(usdy?.status).toBe('DISCOUNT');
+  });
+
   it('falls back to default token prices and benchmarks when quote data is missing', () => {
     const spreads = calculateArbitrageSpreads({});
     const paxg = spreads.find((spread) => spread.tokenSymbol === 'PAXG');

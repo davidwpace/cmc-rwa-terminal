@@ -151,12 +151,10 @@ export default function RWATerminalPage() {
 
       if (isScannerTab) {
         setSpreads([]);
-        setMarketError('Request cancelled or failed before pricing data loaded.');
+        setMarketError('Failed to load pricing data.');
       } else {
         setIssuers([]);
-        setIssuerError(
-          'Request cancelled or failed before issuer intelligence loaded.'
-        );
+        setIssuerError('Failed to load issuer intelligence.');
       }
     } finally {
       if (latestRequestIdRef.current !== requestId) {
@@ -326,7 +324,7 @@ export default function RWATerminalPage() {
             />
             <MetricCard
               label="Issuer Backing Status"
-              value="100% Audited"
+              value={issuers.length > 0 ? issuerAuditRate : 'Pending issuer sync'}
               accentClassName="text-purple-400"
               icon={<ShieldCheck className="h-5 w-5 text-purple-400" />}
             />
