@@ -40,13 +40,14 @@ export async function GET(req: NextRequest) {
 
   const targetUrl = new URL(parsedEndpoint.pathname, CMC_BASE_URL);
   targetUrl.search = mergedParams.toString();
+  const effectiveEndpoint = `${targetUrl.pathname}${targetUrl.search}`;
   const startTime = Date.now();
 
   if (!apiKey) {
     return NextResponse.json({
       meta: {
         latencyMs: 14,
-        endpoint,
+        endpoint: effectiveEndpoint,
         status: 200,
         isMock: true,
         notice: 'No CMC_PRO_API_KEY set. Showing deterministic mock response.',
@@ -71,7 +72,7 @@ export async function GET(req: NextRequest) {
       {
         meta: {
           latencyMs,
-          endpoint,
+          endpoint: effectiveEndpoint,
           status: res.status,
           isMock: false,
           timestamp: new Date().toISOString(),
@@ -86,7 +87,7 @@ export async function GET(req: NextRequest) {
         error: error instanceof Error ? error.message : 'Upstream API error',
         meta: {
           latencyMs: Date.now() - startTime,
-          endpoint,
+          endpoint: effectiveEndpoint,
           status: 500,
         },
       },

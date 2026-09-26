@@ -35,7 +35,12 @@ export default function RWATerminalPage() {
       const json = await res.json();
 
       setProofMeta(json.meta);
-      setRawPayload(json.data);
+      setRawPayload(json.data ?? json);
+
+      if (!res.ok) {
+        setSpreads([]);
+        return;
+      }
 
       const computed = calculateArbitrageSpreads(json.data?.data ?? json.data);
       setSpreads(computed);
@@ -72,6 +77,8 @@ export default function RWATerminalPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setDrawerOpen((open) => !open)}
+            aria-controls="judge-audit-drawer"
+            aria-expanded={drawerOpen}
             className="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs text-slate-200 transition hover:bg-slate-700"
           >
             <Terminal className="h-3.5 w-3.5 text-amber-400" />
@@ -198,10 +205,19 @@ export default function RWATerminalPage() {
       </section>
 
       {drawerOpen && (
-        <aside className="fixed inset-y-0 right-0 z-50 flex w-full flex-col justify-between overflow-y-auto border-l border-slate-700 bg-slate-900 p-6 shadow-2xl md:w-[500px]">
+        <aside
+          id="judge-audit-drawer"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="judge-audit-title"
+          className="fixed inset-y-0 right-0 z-50 flex w-full flex-col justify-between overflow-y-auto border-l border-slate-700 bg-slate-900 p-6 shadow-2xl md:w-[500px]"
+        >
           <div>
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <h3 className="flex items-center gap-2 text-sm font-bold uppercase text-amber-400">
+              <h3
+                id="judge-audit-title"
+                className="flex items-center gap-2 text-sm font-bold uppercase text-amber-400"
+              >
                 <CheckCircle2 className="h-4 w-4" />
                 Hackathon Verification Inspector
               </h3>
