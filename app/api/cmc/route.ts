@@ -44,6 +44,24 @@ export async function GET(req: NextRequest) {
   const startTime = Date.now();
 
   if (!apiKey) {
+    const mockResponse = getMockData(targetUrl);
+
+    if ('error' in mockResponse) {
+      return NextResponse.json(
+        {
+          error: mockResponse.error,
+          meta: {
+            latencyMs: 14,
+            endpoint: effectiveEndpoint,
+            status: 400,
+            isMock: true,
+            notice: 'No CMC_PRO_API_KEY set. Showing deterministic mock response.',
+          },
+        },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json({
       meta: {
         latencyMs: 14,
@@ -52,7 +70,7 @@ export async function GET(req: NextRequest) {
         isMock: true,
         notice: 'No CMC_PRO_API_KEY set. Showing deterministic mock response.',
       },
-      data: getMockData(effectiveEndpoint),
+      data: mockResponse,
     });
   }
 
@@ -96,8 +114,17 @@ export async function GET(req: NextRequest) {
   }
 }
 
-function getMockData(endpoint: string) {
-  if (endpoint.includes('quotes/latest')) {
+function getMockData(targetUrl: URL) {
+  if (
+    targetUrl.pathname === '/v1/cryptocurrency/quotes/latest' &&
+    !targetUrl.searchParams.get('symbol')
+  ) {
+    return {
+      error: 'The symbol query parameter is required for quotes/latest.',
+    };
+  }
+
+  if (targetUrl.pathname === '/v1/cryptocurrency/quotes/latest') {
     return {
       PAXG: {
         name: 'Paxos Gold',

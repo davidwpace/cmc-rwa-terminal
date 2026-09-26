@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -24,6 +24,8 @@ export default function RWATerminalPage() {
   const [proofMeta, setProofMeta] = useState<CMCProofMeta | null>(null);
   const [rawPayload, setRawPayload] = useState<unknown>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerRef = useRef<HTMLElement | null>(null);
+  const drawerToggleRef = useRef<HTMLButtonElement | null>(null);
 
   async function fetchMarketData() {
     setLoading(true);
@@ -63,14 +65,49 @@ export default function RWATerminalPage() {
       return;
     }
 
+    const drawer = drawerRef.current;
+    const toggleButton = drawerToggleRef.current;
+    const previousActiveElement = document.activeElement as HTMLElement | null;
+
+    drawer?.focus();
+
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         setDrawerOpen(false);
+        return;
+      }
+
+      if (event.key !== 'Tab' || !drawer) {
+        return;
+      }
+
+      const focusableElements = drawer.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        drawer.focus();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
       }
     }
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      (previousActiveElement ?? toggleButton)?.focus();
+    };
   }, [drawerOpen]);
 
   return (
@@ -94,9 +131,11 @@ export default function RWATerminalPage() {
 
         <div className="flex items-center gap-3">
           <button
+            ref={drawerToggleRef}
             onClick={() => setDrawerOpen((open) => !open)}
             aria-controls="judge-audit-drawer"
             aria-expanded={drawerOpen}
+            aria-haspopup="dialog"
             className="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs text-slate-200 transition hover:bg-slate-700"
           >
             <Terminal className="h-3.5 w-3.5 text-amber-400" />
@@ -225,9 +264,11 @@ export default function RWATerminalPage() {
       {drawerOpen && (
         <aside
           id="judge-audit-drawer"
+          ref={drawerRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="judge-audit-title"
+          tabIndex={-1}
           className="fixed inset-y-0 right-0 z-50 flex w-full flex-col justify-between overflow-y-auto border-l border-slate-700 bg-slate-900 p-6 shadow-2xl md:w-[500px]"
         >
           <div>
