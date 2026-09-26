@@ -26,7 +26,6 @@ export function calculateArbitrageSpreads(cmcData: QuoteMap): RWASpreadItem[] {
       issuer: 'Paxos Trust',
       category: 'Commodities' as const,
       benchmark: TRADFI_BENCHMARKS.XAU,
-      price: cmcData?.PAXG?.quote?.USD?.price ?? 2652.8,
     },
     {
       id: 'xaut',
@@ -35,7 +34,6 @@ export function calculateArbitrageSpreads(cmcData: QuoteMap): RWASpreadItem[] {
       issuer: 'Tether Holdings',
       category: 'Commodities' as const,
       benchmark: TRADFI_BENCHMARKS.XAU,
-      price: cmcData?.XAUT?.quote?.USD?.price ?? 2649.1,
     },
     {
       id: 'usdy',
@@ -44,7 +42,6 @@ export function calculateArbitrageSpreads(cmcData: QuoteMap): RWASpreadItem[] {
       issuer: 'Ondo Finance',
       category: 'Treasuries' as const,
       benchmark: TRADFI_BENCHMARKS.UST_NAV,
-      price: cmcData?.USDY?.quote?.USD?.price ?? 1.004,
     },
     {
       id: 'buidl',
@@ -53,7 +50,6 @@ export function calculateArbitrageSpreads(cmcData: QuoteMap): RWASpreadItem[] {
       issuer: 'BlackRock',
       category: 'Treasuries' as const,
       benchmark: TRADFI_BENCHMARKS.UST_NAV,
-      price: cmcData?.BUIDL?.quote?.USD?.price ?? 1.0,
     },
     {
       id: 'baapl',
@@ -62,11 +58,19 @@ export function calculateArbitrageSpreads(cmcData: QuoteMap): RWASpreadItem[] {
       issuer: 'Backed Finance',
       category: 'Equities' as const,
       benchmark: TRADFI_BENCHMARKS.AAPL,
-      price: cmcData?.bAAPL?.quote?.USD?.price ?? 227.85,
     },
   ];
 
-  return assets.map((asset) => {
+  const pricedAssets = assets
+    .map((asset) => {
+      const price = cmcData?.[asset.symbol]?.quote?.USD?.price;
+      return typeof price === 'number' && Number.isFinite(price)
+        ? { ...asset, price }
+        : null;
+    })
+    .filter((asset): asset is (typeof assets)[number] & { price: number } => asset !== null);
+
+  return pricedAssets.map((asset) => {
     const spreadPercent =
       ((asset.price - asset.benchmark.price) / asset.benchmark.price) * 100;
     let status: RWASpreadItem['status'] = 'PAR';

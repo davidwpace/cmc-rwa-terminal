@@ -29,7 +29,7 @@ const compactCurrencyFormatter = new Intl.NumberFormat(undefined, {
 
 const QUOTES_ENDPOINT =
   '/v1/cryptocurrency/quotes/latest?symbol=PAXG,XAUT,USDY,BUIDL,bAAPL';
-const ISSUERS_ENDPOINT = '/v1/real-world-assets/issuers';
+const ISSUERS_ENDPOINT = '/v5/real-world-assets/issuers/list';
 
 type TerminalTab = 'scanner' | 'issuers';
 
@@ -258,7 +258,10 @@ export default function RWATerminalPage() {
       const firstElement = focusableElements[0];
       const lastElement = focusableElements[focusableElements.length - 1];
 
-      if (event.shiftKey && document.activeElement === firstElement) {
+      if (
+        event.shiftKey &&
+        (document.activeElement === firstElement || document.activeElement === drawer)
+      ) {
         event.preventDefault();
         lastElement.focus();
       } else if (!event.shiftKey && document.activeElement === lastElement) {
