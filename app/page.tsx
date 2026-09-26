@@ -46,6 +46,9 @@ export default function RWATerminalPage() {
       setSpreads(computed);
     } catch (error) {
       console.error('Fetch error:', error);
+      setProofMeta(null);
+      setRawPayload(null);
+      setSpreads([]);
     } finally {
       setLoading(false);
     }
@@ -54,6 +57,21 @@ export default function RWATerminalPage() {
   useEffect(() => {
     fetchMarketData();
   }, []);
+
+  useEffect(() => {
+    if (!drawerOpen) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setDrawerOpen(false);
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [drawerOpen]);
 
   return (
     <main className="min-h-screen bg-slate-950 p-6 font-mono text-slate-100 md:p-12">

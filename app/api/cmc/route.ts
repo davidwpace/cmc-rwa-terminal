@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
         isMock: true,
         notice: 'No CMC_PRO_API_KEY set. Showing deterministic mock response.',
       },
-      data: getMockData(endpoint),
+      data: getMockData(effectiveEndpoint),
     });
   }
 
