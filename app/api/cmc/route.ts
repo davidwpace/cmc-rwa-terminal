@@ -1,7 +1,105 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import type { RWAIssuerItem } from '@/lib/types';
+
 const CMC_BASE_URL = 'https://pro-api.coinmarketcap.com';
-const ALLOWED_ENDPOINTS = new Set(['/v1/cryptocurrency/quotes/latest']);
+const QUOTES_ENDPOINT = '/v1/cryptocurrency/quotes/latest';
+const ISSUERS_ENDPOINTS = new Set([
+  '/v1/real-world-assets/issuers',
+  '/v5/real-world-assets/issuers/list',
+]);
+const ALLOWED_ENDPOINTS = new Set([QUOTES_ENDPOINT, ...ISSUERS_ENDPOINTS]);
+
+const MOCK_QUOTES = {
+  PAXG: {
+    name: 'Paxos Gold',
+    symbol: 'PAXG',
+    quote: { USD: { price: 2652.8, percent_change_24h: 0.42 } },
+  },
+  XAUT: {
+    name: 'Tether Gold',
+    symbol: 'XAUT',
+    quote: { USD: { price: 2649.1, percent_change_24h: 0.38 } },
+  },
+  USDY: {
+    name: 'Ondo US Dollar Yield',
+    symbol: 'USDY',
+    quote: { USD: { price: 1.054, percent_change_24h: 0.02 } },
+  },
+  BUIDL: {
+    name: 'BlackRock USD Institutional Digital Liquidity Fund',
+    symbol: 'BUIDL',
+    quote: { USD: { price: 1, percent_change_24h: 0 } },
+  },
+  bAAPL: {
+    name: 'Backed Apple',
+    symbol: 'bAAPL',
+    quote: { USD: { price: 227.85, percent_change_24h: -0.15 } },
+  },
+} as const;
+
+const MOCK_ISSUERS: RWAIssuerItem[] = [
+  {
+    id: 'ondo-finance',
+    name: 'Ondo Finance',
+    category: 'Treasuries',
+    audited: true,
+    backingStatus: 'Attested treasuries and cash equivalents',
+    aumUsd: 620000000,
+    tokens: [
+      {
+        symbol: 'USDY',
+        name: 'Ondo US Dollar Yield',
+        category: 'Treasuries',
+      },
+    ],
+  },
+  {
+    id: 'paxos-trust',
+    name: 'Paxos Trust',
+    category: 'Gold',
+    audited: true,
+    backingStatus: 'Allocated London Good Delivery gold bars',
+    aumUsd: 540000000,
+    tokens: [
+      {
+        symbol: 'PAXG',
+        name: 'Paxos Gold',
+        category: 'Gold',
+      },
+    ],
+  },
+  {
+    id: 'tether',
+    name: 'Tether',
+    category: 'Gold',
+    audited: true,
+    backingStatus: 'Physical gold reserve attestations',
+    aumUsd: 590000000,
+    tokens: [
+      {
+        symbol: 'XAUT',
+        name: 'Tether Gold',
+        category: 'Gold',
+      },
+    ],
+  },
+  {
+    id: 'backed-finance',
+    name: 'Backed Finance',
+    category: 'Equities',
+    audited: true,
+    backingStatus: 'Segregated custody with periodic verification',
+    aumUsd: 95000000,
+    tokens: [
+      {
+        symbol: 'bAAPL',
+        name: 'Backed Apple',
+        category: 'Equities',
+      },
+    ],
+  },
+];
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -30,8 +128,8 @@ export async function GET(req: NextRequest) {
   }
 
   const apiKey = process.env.CMC_PRO_API_KEY;
-
   const mergedParams = new URLSearchParams(parsedEndpoint.searchParams);
+
   searchParams.forEach((value, key) => {
     if (key !== 'endpoint') {
       mergedParams.append(key, value);
@@ -116,71 +214,46 @@ export async function GET(req: NextRequest) {
 }
 
 function getMockData(targetUrl: URL) {
-  if (
-    targetUrl.pathname === '/v1/cryptocurrency/quotes/latest' &&
-    !targetUrl.searchParams.get('symbol')
-  ) {
-    return {
-      error: 'The symbol query parameter is required for quotes/latest.',
-    };
+  if (targetUrl.pathname === QUOTES_ENDPOINT) {
+    const rawSymbols = targetUrl.searchParams.get('symbol');
+
+    if (!rawSymbols) {
+      return {
+        error: 'The symbol query parameter is required for quotes/latest.',
+      };
+    }
+
+    const requestedSymbols = rawSymbols
+      .split(',')
+      .map((symbol) => symbol.trim())
+      .filter(Boolean);
+
+    const filteredQuotes = Object.fromEntries(
+      requestedSymbols
+        .map((symbol) => {
+          const matchingKey = Object.keys(MOCK_QUOTES).find(
+            (quoteSymbol) => quoteSymbol.toLowerCase() === symbol.toLowerCase()
+          );
+
+          return matchingKey
+            ? [matchingKey, MOCK_QUOTES[matchingKey as keyof typeof MOCK_QUOTES]]
+            : null;
+        })
+        .filter((entry): entry is [string, (typeof MOCK_QUOTES)[keyof typeof MOCK_QUOTES]] =>
+          Boolean(entry)
+        )
+    );
+
+    return filteredQuotes;
   }
 
-  if (targetUrl.pathname === '/v1/cryptocurrency/quotes/latest') {
+  if (ISSUERS_ENDPOINTS.has(targetUrl.pathname)) {
     return {
-      PAXG: {
-        name: 'Paxos Gold',
-        symbol: 'PAXG',
-        quote: { USD: { price: 2652.8, percent_change_24h: 0.42 } },
-      },
-      XAUT: {
-        name: 'Tether Gold',
-        symbol: 'XAUT',
-        quote: { USD: { price: 2649.1, percent_change_24h: 0.38 } },
-      },
-      USDY: {
-        name: 'Ondo US Dollar Yield',
-        symbol: 'USDY',
-        quote: { USD: { price: 1.054, percent_change_24h: 0.02 } },
-      },
-      BUIDL: {
-        name: 'BlackRock USD Institutional Digital Liquidity Fund',
-        symbol: 'BUIDL',
-        quote: { USD: { price: 1, percent_change_24h: 0 } },
-      },
-      bAAPL: {
-        name: 'Backed Apple',
-        symbol: 'bAAPL',
-        quote: { USD: { price: 227.85, percent_change_24h: -0.15 } },
-      },
+      issuers: MOCK_ISSUERS,
     };
   }
 
   return {
-    issuers: [
-      {
-        name: 'Ondo Finance',
-        aum_usd: 620000000,
-        category: 'US Treasuries',
-        audited: true,
-      },
-      {
-        name: 'Paxos Trust',
-        aum_usd: 540000000,
-        category: 'Precious Metals',
-        audited: true,
-      },
-      {
-        name: 'Tether',
-        aum_usd: 590000000,
-        category: 'Precious Metals',
-        audited: true,
-      },
-      {
-        name: 'Backed Finance',
-        aum_usd: 95000000,
-        category: 'Equities & ETFs',
-        audited: true,
-      },
-    ],
+    error: 'Unsupported mock endpoint.',
   };
 }

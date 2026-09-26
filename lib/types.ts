@@ -12,6 +12,22 @@ export interface RWASpreadItem {
   arbitrageSignal: string;
 }
 
+export interface RWAIssuerToken {
+  symbol: string;
+  name: string;
+  category: 'Treasuries' | 'Gold' | 'Equities';
+}
+
+export interface RWAIssuerItem {
+  id: string;
+  name: string;
+  category: 'Treasuries' | 'Gold' | 'Equities';
+  audited: boolean;
+  backingStatus: string;
+  aumUsd: number;
+  tokens: RWAIssuerToken[];
+}
+
 export interface CMCProofMeta {
   latencyMs: number;
   endpoint: string;
