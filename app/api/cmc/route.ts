@@ -107,7 +107,7 @@ export async function GET(req: NextRequest) {
   const endpoint = searchParams.get('endpoint');
 
   if (!endpoint) {
-    return NextResponse.json(
+    return noStoreJson(
       { error: 'Endpoint query parameter required' },
       { status: 400 }
     );
@@ -118,14 +118,14 @@ export async function GET(req: NextRequest) {
   try {
     parsedEndpoint = new URL(endpoint, CMC_BASE_URL);
   } catch {
-    return NextResponse.json({ error: 'Invalid endpoint' }, { status: 400 });
+    return noStoreJson({ error: 'Invalid endpoint' }, { status: 400 });
   }
 
   if (
     parsedEndpoint.origin !== CMC_BASE_ORIGIN ||
     !ALLOWED_ENDPOINTS.has(parsedEndpoint.pathname)
   ) {
-    return NextResponse.json({ error: 'Invalid endpoint' }, { status: 400 });
+    return noStoreJson({ error: 'Invalid endpoint' }, { status: 400 });
   }
 
   const apiKey = process.env.CMC_PRO_API_KEY;
@@ -146,7 +146,7 @@ export async function GET(req: NextRequest) {
     const mockResponse = getMockData(targetUrl);
 
     if ('error' in mockResponse) {
-      return NextResponse.json(
+      return noStoreJson(
         {
           error: mockResponse.error,
           meta: {
@@ -161,7 +161,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({
+    return noStoreJson({
       meta: {
         latencyMs: 14,
         endpoint: effectiveEndpoint,
@@ -185,7 +185,7 @@ export async function GET(req: NextRequest) {
     const latencyMs = Date.now() - startTime;
     const data = await res.json();
 
-    return NextResponse.json(
+    return noStoreJson(
       {
         meta: {
           latencyMs,
@@ -199,7 +199,7 @@ export async function GET(req: NextRequest) {
       { status: res.status }
     );
   } catch (error: unknown) {
-    return NextResponse.json(
+    return noStoreJson(
       {
         error: error instanceof Error ? error.message : 'Upstream API error',
         meta: {
@@ -269,4 +269,17 @@ function getMockData(targetUrl: URL) {
   return {
     error: 'Unsupported mock endpoint.',
   };
+}
+
+function noStoreJson(
+  body: Parameters<typeof NextResponse.json>[0],
+  init?: Parameters<typeof NextResponse.json>[1]
+) {
+  return NextResponse.json(body, {
+    ...init,
+    headers: {
+      ...init?.headers,
+      'Cache-Control': 'no-store',
+    },
+  });
 }

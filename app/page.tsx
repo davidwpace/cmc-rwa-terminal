@@ -59,8 +59,12 @@ export default function RWATerminalPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useRef<HTMLElement | null>(null);
   const drawerToggleRef = useRef<HTMLButtonElement | null>(null);
-  const requestAbortRef = useRef<AbortController | null>(null);
-  const latestRequestIdRef = useRef(0);
+  const scannerTabRef = useRef<HTMLButtonElement | null>(null);
+  const issuersTabRef = useRef<HTMLButtonElement | null>(null);
+  const marketAbortRef = useRef<AbortController | null>(null);
+  const issuerAbortRef = useRef<AbortController | null>(null);
+  const marketRequestIdRef = useRef(0);
+  const issuerRequestIdRef = useRef(0);
 
   const activeLoading = activeTab === 'scanner' ? marketLoading : issuerLoading;
   const proofMeta = activeTab === 'scanner' ? marketProofMeta : issuerProofMeta;
@@ -81,11 +85,14 @@ export default function RWATerminalPage() {
   }, [issuers]);
 
   async function fetchTerminalData(tab: TerminalTab) {
-    requestAbortRef.current?.abort();
     const controller = new AbortController();
-    requestAbortRef.current = controller;
-    const requestId = ++latestRequestIdRef.current;
     const isScannerTab = tab === 'scanner';
+    const abortRef = isScannerTab ? marketAbortRef : issuerAbortRef;
+    const requestIdRef = isScannerTab ? marketRequestIdRef : issuerRequestIdRef;
+
+    abortRef.current?.abort();
+    abortRef.current = controller;
+    const requestId = ++requestIdRef.current;
     const endpoint = isScannerTab ? QUOTES_ENDPOINT : ISSUERS_ENDPOINT;
 
     if (isScannerTab) {
@@ -102,7 +109,7 @@ export default function RWATerminalPage() {
       });
       const json = await res.json();
 
-      if (latestRequestIdRef.current !== requestId) {
+      if (requestIdRef.current !== requestId) {
         return;
       }
 
@@ -145,6 +152,15 @@ export default function RWATerminalPage() {
         setMarketError(null);
       } else {
         const normalizedIssuers = normalizeIssuerPayload(json.data);
+
+        if (normalizedIssuers === null) {
+          setIssuerProofMeta(json.meta ?? null);
+          setIssuerRawPayload(json.data ?? json);
+          setIssuers([]);
+          setIssuerError('Malformed issuer intelligence response.');
+          return;
+        }
+
         setIssuerProofMeta(json.meta ?? null);
         setIssuerRawPayload(json.data ?? json);
         setIssuers(normalizedIssuers);
@@ -155,7 +171,7 @@ export default function RWATerminalPage() {
         );
       }
     } catch (error) {
-      if (controller.signal.aborted || latestRequestIdRef.current !== requestId) {
+      if (controller.signal.aborted || requestIdRef.current !== requestId) {
         return;
       }
 
@@ -175,7 +191,7 @@ export default function RWATerminalPage() {
         setIssuerError('Failed to load issuer intelligence.');
       }
     } finally {
-      if (latestRequestIdRef.current !== requestId) {
+      if (requestIdRef.current !== requestId) {
         return;
       }
 
@@ -189,9 +205,12 @@ export default function RWATerminalPage() {
 
   useEffect(() => {
     void fetchTerminalData('scanner');
+    const marketAbortController = marketAbortRef.current;
+    const issuerAbortController = issuerAbortRef.current;
 
     return () => {
-      requestAbortRef.current?.abort();
+      marketAbortController?.abort();
+      issuerAbortController?.abort();
     };
   }, []);
 
@@ -259,8 +278,40 @@ export default function RWATerminalPage() {
     };
   }, [drawerOpen]);
 
+  function handleTabKeyDown(
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    tab: TerminalTab
+  ) {
+    const nextTab =
+      event.key === 'ArrowRight' || event.key === 'ArrowDown'
+        ? tab === 'scanner'
+          ? 'issuers'
+          : 'scanner'
+        : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+          ? tab === 'scanner'
+            ? 'issuers'
+            : 'scanner'
+          : event.key === 'Home'
+            ? 'scanner'
+            : event.key === 'End'
+              ? 'issuers'
+              : null;
+
+    if (!nextTab) {
+      return;
+    }
+
+    event.preventDefault();
+    setActiveTab(nextTab);
+    (nextTab === 'scanner' ? scannerTabRef : issuersTabRef).current?.focus();
+  }
+
   return (
-    <main className="min-h-screen bg-slate-950 p-6 font-mono text-slate-100 md:p-12">
+    <>
+      <main
+        aria-hidden={drawerOpen}
+        className="min-h-screen bg-slate-950 p-6 font-mono text-slate-100 md:p-12"
+      >
       <header className="flex flex-col items-start justify-between gap-4 border-b border-slate-800 pb-8 md:flex-row md:items-center">
         <div>
           <div className="flex items-center gap-2">
@@ -309,11 +360,13 @@ export default function RWATerminalPage() {
         className="my-8 flex flex-wrap gap-2 rounded border border-slate-800 bg-slate-900/60 p-2"
       >
         <button
+          ref={scannerTabRef}
           id="scanner-tab"
           role="tab"
           aria-selected={activeTab === 'scanner'}
           aria-controls="scanner-panel"
           tabIndex={activeTab === 'scanner' ? 0 : -1}
+          onKeyDown={(event) => handleTabKeyDown(event, 'scanner')}
           onClick={() => setActiveTab('scanner')}
           className={`rounded px-4 py-2 text-sm font-semibold transition ${
             activeTab === 'scanner'
@@ -324,11 +377,13 @@ export default function RWATerminalPage() {
           Arbitrage Scanner
         </button>
         <button
+          ref={issuersTabRef}
           id="issuers-tab"
           role="tab"
           aria-selected={activeTab === 'issuers'}
           aria-controls="issuers-panel"
           tabIndex={activeTab === 'issuers' ? 0 : -1}
+          onKeyDown={(event) => handleTabKeyDown(event, 'issuers')}
           onClick={() => setActiveTab('issuers')}
           className={`rounded px-4 py-2 text-sm font-semibold transition ${
             activeTab === 'issuers'
@@ -578,8 +633,15 @@ export default function RWATerminalPage() {
         </section>
       )}
 
+      </main>
       {drawerOpen && (
-        <aside
+        <>
+          <div
+            aria-hidden="true"
+            className="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm"
+            onClick={() => setDrawerOpen(false)}
+          />
+          <aside
           id="judge-audit-drawer"
           ref={drawerRef}
           role="dialog"
@@ -654,9 +716,10 @@ export default function RWATerminalPage() {
           <div className="border-t border-slate-800 pt-4 text-center text-[10px] text-slate-500">
             Key injected server-side via Next.js Route Handler.
           </div>
-        </aside>
+          </aside>
+        </>
       )}
-    </main>
+    </>
   );
 }
 
@@ -672,7 +735,7 @@ function normalizeQuotePayload(payload: unknown): QuotePayload {
   return payload && typeof payload === 'object' ? (payload as QuotePayload) : {};
 }
 
-function normalizeIssuerPayload(payload: unknown): RWAIssuerItem[] {
+function normalizeIssuerPayload(payload: unknown): RWAIssuerItem[] | null {
   if (Array.isArray(payload)) {
     return payload as RWAIssuerItem[];
   }
@@ -687,7 +750,7 @@ function normalizeIssuerPayload(payload: unknown): RWAIssuerItem[] {
     }
   }
 
-  return [];
+  return null;
 }
 
 function MetricCard({
