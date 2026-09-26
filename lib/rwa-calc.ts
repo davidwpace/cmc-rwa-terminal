@@ -26,7 +26,7 @@ export function calculateArbitrageSpreads(cmcData: QuoteMap): RWASpreadItem[] {
       issuer: 'Paxos Trust',
       category: 'Commodities' as const,
       benchmark: TRADFI_BENCHMARKS.XAU,
-      price: cmcData?.PAXG?.quote?.USD?.price ?? 2652.8,
+      price: cmcData?.PAXG?.quote?.USD?.price,
     },
     {
       id: 'xaut',
@@ -35,7 +35,7 @@ export function calculateArbitrageSpreads(cmcData: QuoteMap): RWASpreadItem[] {
       issuer: 'Tether Holdings',
       category: 'Commodities' as const,
       benchmark: TRADFI_BENCHMARKS.XAU,
-      price: cmcData?.XAUT?.quote?.USD?.price ?? 2649.1,
+      price: cmcData?.XAUT?.quote?.USD?.price,
     },
     {
       id: 'usdy',
@@ -44,7 +44,7 @@ export function calculateArbitrageSpreads(cmcData: QuoteMap): RWASpreadItem[] {
       issuer: 'Ondo Finance',
       category: 'Treasuries' as const,
       benchmark: TRADFI_BENCHMARKS.UST_NAV,
-      price: cmcData?.USDY?.quote?.USD?.price ?? 1.004,
+      price: cmcData?.USDY?.quote?.USD?.price,
     },
     {
       id: 'buidl',
@@ -53,7 +53,7 @@ export function calculateArbitrageSpreads(cmcData: QuoteMap): RWASpreadItem[] {
       issuer: 'BlackRock',
       category: 'Treasuries' as const,
       benchmark: TRADFI_BENCHMARKS.UST_NAV,
-      price: cmcData?.BUIDL?.quote?.USD?.price ?? 1.0,
+      price: cmcData?.BUIDL?.quote?.USD?.price,
     },
     {
       id: 'baapl',
@@ -62,36 +62,44 @@ export function calculateArbitrageSpreads(cmcData: QuoteMap): RWASpreadItem[] {
       issuer: 'Backed Finance',
       category: 'Equities' as const,
       benchmark: TRADFI_BENCHMARKS.AAPL,
-      price: cmcData?.bAAPL?.quote?.USD?.price ?? 227.85,
+      price: cmcData?.bAAPL?.quote?.USD?.price,
     },
   ];
 
-  return assets.map((asset) => {
-    const spreadPercent =
+  return assets
+    .filter(
+      (
+      asset
+      ): asset is (typeof assets)[number] & {
+      price: number;
+      } => typeof asset.price === 'number' && Number.isFinite(asset.price)
+    )
+    .map((asset) => {
+      const spreadPercent =
       ((asset.price - asset.benchmark.price) / asset.benchmark.price) * 100;
-    let status: RWASpreadItem['status'] = 'PAR';
-    let arbitrageSignal = 'Hold / Parity Match';
+      let status: RWASpreadItem['status'] = 'PAR';
+      let arbitrageSignal = 'Hold / Parity Match';
 
-    if (spreadPercent > 0.05) {
+      if (spreadPercent > 0.05) {
       status = 'PREMIUM';
       arbitrageSignal = `Short On-Chain / Buy ${asset.benchmark.name}`;
-    } else if (spreadPercent < -0.05) {
+      } else if (spreadPercent < -0.05) {
       status = 'DISCOUNT';
       arbitrageSignal = 'Buy On-Chain / Redeem at TradFi Benchmark';
-    }
+      }
 
-    return {
-      id: asset.id,
-      tokenSymbol: asset.symbol,
-      tokenName: asset.name,
-      issuer: asset.issuer,
-      category: asset.category,
-      tokenPrice: asset.price,
-      benchmarkPrice: asset.benchmark.price,
-      benchmarkName: asset.benchmark.name,
-      spreadPercent,
-      status,
-      arbitrageSignal,
-    };
-  });
+      return {
+        id: asset.id,
+        tokenSymbol: asset.symbol,
+        tokenName: asset.name,
+        issuer: asset.issuer,
+        category: asset.category,
+        tokenPrice: asset.price,
+        benchmarkPrice: asset.benchmark.price,
+        benchmarkName: asset.benchmark.name,
+        spreadPercent,
+        status,
+        arbitrageSignal,
+      };
+    });
 }

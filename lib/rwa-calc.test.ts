@@ -57,14 +57,28 @@ describe('calculateArbitrageSpreads', () => {
     expect(usdy?.status).toBe('DISCOUNT');
   });
 
-  it('falls back to default token prices and benchmarks when quote data is missing', () => {
-    const spreads = calculateArbitrageSpreads({});
+  it('omits assets that do not have an upstream quote price', () => {
+    const spreads = calculateArbitrageSpreads({
+      PAXG: { quote: { USD: { price: 2652.8 } } },
+    });
     const paxg = spreads.find((spread) => spread.tokenSymbol === 'PAXG');
     const baapl = spreads.find((spread) => spread.tokenSymbol === 'bAAPL');
 
-    expect(spreads).toHaveLength(5);
+    expect(spreads).toHaveLength(1);
     expect(paxg?.tokenPrice).toBe(2652.8);
     expect(paxg?.benchmarkPrice).toBe(TRADFI_BENCHMARKS.XAU.price);
-    expect(baapl?.benchmarkPrice).toBe(TRADFI_BENCHMARKS.AAPL.price);
+    expect(baapl).toBeUndefined();
+  });
+
+  it('omits assets with non-finite upstream quote prices', () => {
+    const spreads = calculateArbitrageSpreads({
+      PAXG: { quote: { USD: { price: Number.NaN } } },
+      XAUT: { quote: { USD: { price: Number.POSITIVE_INFINITY } } },
+      USDY: { quote: { USD: { price: 1.004 } } },
+    });
+
+    expect(spreads).toHaveLength(1);
+    expect(spreads[0]?.tokenSymbol).toBe('USDY');
+    expect(spreads[0]?.tokenPrice).toBe(1.004);
   });
 });
