@@ -133,7 +133,7 @@ export default function RWATerminalPage() {
           <button
             ref={drawerToggleRef}
             onClick={() => setDrawerOpen((open) => !open)}
-            aria-controls="judge-audit-drawer"
+            aria-controls={drawerOpen ? 'judge-audit-drawer' : undefined}
             aria-expanded={drawerOpen}
             aria-haspopup="dialog"
             className="flex items-center gap-2 rounded border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs text-slate-200 transition hover:bg-slate-700"

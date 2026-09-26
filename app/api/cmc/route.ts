@@ -107,6 +107,7 @@ export async function GET(req: NextRequest) {
           latencyMs: Date.now() - startTime,
           endpoint: effectiveEndpoint,
           status: 500,
+          isMock: false,
         },
       },
       { status: 500 }
