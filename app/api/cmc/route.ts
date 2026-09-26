@@ -229,6 +229,12 @@ function getMockData(targetUrl: URL) {
       .map((symbol) => symbol.trim())
       .filter(Boolean);
 
+    if (requestedSymbols.length === 0) {
+      return {
+        error: 'At least one valid symbol query parameter is required for quotes/latest.',
+      };
+    }
+
     const filteredQuotes = Object.fromEntries(
       requestedSymbols
         .map((symbol) => {
@@ -244,6 +250,12 @@ function getMockData(targetUrl: URL) {
           Boolean(entry)
         )
     );
+
+    if (Object.keys(filteredQuotes).length === 0) {
+      return {
+        error: 'At least one valid symbol query parameter is required for quotes/latest.',
+      };
+    }
 
     return filteredQuotes;
   }

@@ -52,8 +52,10 @@ export default function RWATerminalPage() {
   const [issuerLoading, setIssuerLoading] = useState(false);
   const [marketError, setMarketError] = useState<string | null>(null);
   const [issuerError, setIssuerError] = useState<string | null>(null);
-  const [proofMeta, setProofMeta] = useState<CMCProofMeta | null>(null);
-  const [rawPayload, setRawPayload] = useState<unknown>(null);
+  const [marketProofMeta, setMarketProofMeta] = useState<CMCProofMeta | null>(null);
+  const [issuerProofMeta, setIssuerProofMeta] = useState<CMCProofMeta | null>(null);
+  const [marketRawPayload, setMarketRawPayload] = useState<unknown>(null);
+  const [issuerRawPayload, setIssuerRawPayload] = useState<unknown>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerRef = useRef<HTMLElement | null>(null);
   const drawerToggleRef = useRef<HTMLButtonElement | null>(null);
@@ -61,6 +63,8 @@ export default function RWATerminalPage() {
   const latestRequestIdRef = useRef(0);
 
   const activeLoading = activeTab === 'scanner' ? marketLoading : issuerLoading;
+  const proofMeta = activeTab === 'scanner' ? marketProofMeta : issuerProofMeta;
+  const rawPayload = activeTab === 'scanner' ? marketRawPayload : issuerRawPayload;
 
   const totalTrackedTokens = useMemo(
     () => issuers.reduce((count, issuer) => count + issuer.tokens.length, 0),
@@ -102,9 +106,6 @@ export default function RWATerminalPage() {
         return;
       }
 
-      setProofMeta(json.meta ?? null);
-      setRawPayload(json.data ?? json);
-
       if (!res.ok) {
         const message =
           typeof json.error === 'string'
@@ -114,9 +115,13 @@ export default function RWATerminalPage() {
               : 'Unable to load issuer intelligence.';
 
         if (isScannerTab) {
+          setMarketProofMeta(json.meta ?? null);
+          setMarketRawPayload(json.data ?? json);
           setSpreads([]);
           setMarketError(message);
         } else {
+          setIssuerProofMeta(json.meta ?? null);
+          setIssuerRawPayload(json.data ?? json);
           setIssuers([]);
           setIssuerError(message);
         }
@@ -124,15 +129,24 @@ export default function RWATerminalPage() {
       }
 
       if (isScannerTab) {
-        const computedSpreads = calculateArbitrageSpreads(
-          normalizeQuotePayload(json.data)
-        );
+        const normalizedQuotes = normalizeQuotePayload(json.data);
+
+        setMarketProofMeta(json.meta ?? null);
+        setMarketRawPayload(json.data ?? json);
+
+        if (Object.keys(normalizedQuotes).length === 0) {
+          setSpreads([]);
+          setMarketError('No RWA quote data returned.');
+          return;
+        }
+
+        const computedSpreads = calculateArbitrageSpreads(normalizedQuotes);
         setSpreads(computedSpreads);
-        setMarketError(
-          computedSpreads.length === 0 ? 'No RWA quote data returned.' : null
-        );
+        setMarketError(null);
       } else {
         const normalizedIssuers = normalizeIssuerPayload(json.data);
+        setIssuerProofMeta(json.meta ?? null);
+        setIssuerRawPayload(json.data ?? json);
         setIssuers(normalizedIssuers);
         setIssuerError(
           normalizedIssuers.length === 0
@@ -148,13 +162,15 @@ export default function RWATerminalPage() {
       if (process.env.NODE_ENV !== 'production') {
         console.error('Fetch error:', error);
       }
-      setProofMeta(null);
-      setRawPayload(null);
 
       if (isScannerTab) {
+        setMarketProofMeta(null);
+        setMarketRawPayload(null);
         setSpreads([]);
         setMarketError('Failed to load pricing data.');
       } else {
+        setIssuerProofMeta(null);
+        setIssuerRawPayload(null);
         setIssuers([]);
         setIssuerError('Failed to load issuer intelligence.');
       }
@@ -235,7 +251,11 @@ export default function RWATerminalPage() {
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      (previousActiveElement ?? toggleButton)?.focus();
+      const focusTarget = previousActiveElement ?? toggleButton;
+
+      if (focusTarget && document.body.contains(focusTarget)) {
+        focusTarget.focus();
+      }
     };
   }, [drawerOpen]);
 
